@@ -1,6 +1,10 @@
+-- // Ars.red Notification Library (Full & Fixed Version)
 local Notifications = {}
 Notifications.Font = 'Plex'
 Notifications.ChatGui = nil
+
+-- // Bypass for LPH_NO_VIRTUALIZE (To ensure it works on every executor)
+local LPH_NO_VIRTUALIZE = (getgenv and getgenv().LPH_NO_VIRTUALIZE) or function(f) return f end
 
 local yOffset = 15
 local defaultPosition = Vector2.new(15, 327)
@@ -16,79 +20,70 @@ local Notification = LPH_NO_VIRTUALIZE(function(waittime, text, mode, color)
         end
         
         selfIdx += 1
-
         table.insert(notifs, selfIdx)
         
-        -- // Mode
+        -- // Mode Text (Outline/Shadow)
         local modeShadow = Drawing.new("Text")
-        modeShadow.Font = Drawing.Fonts[Notifications.Font]
-        -- modeShadow.Font = 2
+        modeShadow.Font = Drawing.Fonts[Notifications.Font] or 2
         modeShadow.Size = 13
         modeShadow.Outline = false
         modeShadow.Color = Color3.fromRGB(0, 0, 0)
         modeShadow.Text = mode
         modeShadow.Visible = true
-        modeShadow.Transparency = 0
-        -- modeShadow.Position = Vector2.new(14, game:GetService("Players").LocalPlayer.PlayerGui["Interface Main"].Chat.Input.Position.Y.Offset + 26)
+        modeShadow.Transparency = 1 -- เปลี่ยนเป็น 1 เพื่อให้เห็นชัดตอนเริ่ม
 
-        local yPosition = 10
+        -- // Calculate Position (Based on Chat or Default)
+        local yPosition = 300
         if (Notifications.ChatGui) then
-            yPosition = Notifications.ChatGui:WaitForChild("Input").Position.Y.Offset
+            pcall(function()
+                yPosition = Notifications.ChatGui:WaitForChild("Input").Position.Y.Offset
+            end)
         end
 
-        modeShadow.Position = Vector2.new(-10, yPosition + 26) + (Vector2.new(0, 12) * (selfIdx - 1))
+        modeShadow.Position = Vector2.new(-10, yPosition + 26) + (Vector2.new(0, 15) * (selfIdx - 1))
 
         local modeTxt = Drawing.new("Text")
-        modeTxt.Font = Drawing.Fonts[Notifications.Font]
-        -- modeTxt.Font = 2
+        modeTxt.Font = modeShadow.Font
         modeTxt.Size = 13
-        modeTxt.Outline = false
         modeTxt.Color = color
         modeTxt.Text = mode
         modeTxt.Visible = true
-        modeTxt.Transparency = 0
-        -- modeTxt.ZIndex = 2
+        modeTxt.Transparency = 1
         modeTxt.Position = modeShadow.Position - Vector2.new(1, 1)
 
-        -- // Text
+        -- // Notification Text
         local textShadow = Drawing.new("Text")
-        textShadow.Font = Drawing.Fonts[Notifications.Font]
-        -- textShadow.Font = 2
+        textShadow.Font = modeShadow.Font
         textShadow.Size = 13
-        textShadow.Outline = false
         textShadow.Color = Color3.fromRGB(0, 0, 0)
         textShadow.Text = text
         textShadow.Visible = true
-        textShadow.Transparency = 0
+        textShadow.Transparency = 1
         textShadow.Position = modeShadow.Position + Vector2.new(modeShadow.TextBounds.X + 4, 0)
 
         local textTxt = Drawing.new("Text")
-        textTxt.Font = Drawing.Fonts[Notifications.Font]
-        -- textTxt.Font = 2
+        textTxt.Font = modeShadow.Font
         textTxt.Size = 13
-        textTxt.Outline = false
         textTxt.Color = Color3.fromRGB(235, 235, 235)
         textTxt.Text = text
         textTxt.Visible = true
-        textTxt.Transparency = 0
-        -- textTxt.ZIndex = 2
+        textTxt.Transparency = 1
         textTxt.Position = textShadow.Position - Vector2.new(1, 1)
 
-        for i = 0, 10, 2.5 do
+        -- // Smooth Fade-in & Movement
+        for i = 0, 15, 3 do
             task.wait()
-            modeShadow.Transparency = modeShadow.Transparency + 0.25
-            textShadow.Transparency = textShadow.Transparency + 0.25
-            modeTxt.Transparency = modeTxt.Transparency + 0.25
-            textTxt.Transparency = textTxt.Transparency + 0.25
-
-            modeShadow.Position = Vector2.new(modeShadow.Position.X + i, modeShadow.Position.Y)
-            textShadow.Position = Vector2.new(textShadow.Position.X + i, textShadow.Position.Y)
-            modeTxt.Position = Vector2.new(modeTxt.Position.X + i, modeTxt.Position.Y)
-            textTxt.Position = Vector2.new(textTxt.Position.X + i, textTxt.Position.Y)
+            local move = Vector2.new(i, 0)
+            modeShadow.Position += move
+            modeTxt.Position += move
+            textShadow.Position += move
+            textTxt.Position += move
         end
 
+        -- // Wait for the duration
         task.wait(tonumber(waittime))
 
+        -- // Fade-out logic
         for i = 1, 0, -0.25 do
             task.wait()
             modeShadow.Transparency = i
@@ -97,17 +92,21 @@ local Notification = LPH_NO_VIRTUALIZE(function(waittime, text, mode, color)
             textTxt.Transparency = i
         end
         
+        -- // Cleanup
         modeShadow:Remove()
         textShadow:Remove()
         modeTxt:Remove()
         textTxt:Remove()
         
-        table.remove(notifs, table.find(notifs, selfIdx))
+        local findIdx = table.find(notifs, selfIdx)
+        if findIdx then
+            table.remove(notifs, findIdx)
+        end
     end)
 end)
 
-Notifications.Notify = LPH_NO_VIRTUALIZE(function(self, message: string, lifeTime: number, cheatName: string, cheatColor: Color3?) -- ihaxu fixed my code ✅
-    return Notification(lifeTime, message, cheatName, cheatColor or Color3.fromRGB(255, 73, 73))
+Notifications.Notify = LPH_NO_VIRTUALIZE(function(self, message, lifeTime, cheatName, cheatColor)
+    return Notification(lifeTime or 5, message or "", cheatName or "[ars.red]", cheatColor or Color3.fromRGB(255, 73, 73))
 end)
 
 return Notifications
