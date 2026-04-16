@@ -7,7 +7,7 @@
 do
     -- // Constants (Replicated from Luarmor Seeds)
     local CHARSET = "qwertyuiopasdfghjklzxcvbnm098765"
-    local TUTORIAL_KEY = "8u4lXCCxDVks3YOJi5zcMrF7HCyYHgq9v"
+    local TUTORIAL_KEY = "nil  nil  "
     local _os_clock = os.clock
     local _wait = task.wait or wait
     local _tonumber = tonumber
@@ -175,7 +175,7 @@ do
     end
 
     -- // Cloud Logger (Discord)
-    local function logAuth(hwid, status, execName)
+    local function logAuth(hwid, status, execName, key)
         local data = {
             ["embeds"] = {{
                 ["title"] = "SpideyAuth Logs",
@@ -184,14 +184,18 @@ do
                     {["name"] = "User", ["value"] = game.Players.LocalPlayer.Name, ["inline"] = true},
                     {["name"] = "HWID", ["value"] = hwid, ["inline"] = true},
                     {["name"] = "Status", ["value"] = status, ["inline"] = true},
-                    {["name"] = "Executor", ["value"] = execName, ["inline"] = true}
+                    {["name"] = "Executor", ["value"] = execName, ["inline"] = true},
+                    {["name"] = "Key Used", ["value"] = key or "None", ["inline"] = false}
                 },
                 ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
             }}
         }
-        _pcall(function()
+        local success, err = _pcall(function()
             HttpService:PostAsync(decode(config.discord), HttpService:JSONEncode(data))
         end)
+        if not success then
+            warn("[SpideyAuth]: Webhook Log Error: " .. tostring(err))
+        end
     end
 
     -- // Entry Point
@@ -225,13 +229,13 @@ do
 
         if authed then
             print("[" .. config.script_name .. "]: Authenticated! HWID: " .. hwid)
-            logAuth(hwid, "Verified", exeName)
+            logAuth(hwid, "Verified", exeName, _G.script_key)
             spawnHeartbeat(hwid)
             
             -- EXECUTION POINT
             loadstring(game:HttpGet("https://raw.githubusercontent.com/edgeiy/infiniteyield/master/source"))()
         else
-            logAuth(hwid, "Blacklisted/Unknown", exeName)
+            logAuth(hwid, "Blacklisted/Unknown", exeName, _G.script_key)
             fakeKick("Whitelist Error", "You are not whitelisted for this script.")
         end
     end
